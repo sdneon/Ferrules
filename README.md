@@ -27,6 +27,9 @@ You can change the difficulty of the game with these options:
 - Number of players from 2 to 4. Default: 2.
 - Enable **unlimited** pieces. Default: 3 pieces of each size per colour.
 - Enable ban of overpowered position (see hint). Default: all positions allowed.
+- **Helpers**:
+    - Show hint of current player's winning moves - possible winning piece blinking in your colour. Default: off.
+    - Show hint of other players' winning moves - possible winning piece blinking in black colour. Default: off.
 
 ### Hint
 See game page itself for hint to win 2 players games 😁

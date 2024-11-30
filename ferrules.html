@@ -120,16 +120,51 @@ body {
 .highlight {
     -webkit-text-stroke: 5px;
 }
+
+.hint_other_may_win {
+    color: black;
+    animation: blinker 1s linear infinite;
+}
+
+.hint_red_may_win {
+    color: red;
+    animation: blinker 1s linear infinite;
+}
+
+.hint_green_may_win {
+    color: green;
+    animation: blinker 1s linear infinite;
+}
+
+.hint_blue_may_win {
+    color: blue;
+    animation: blinker 1s linear infinite;
+}
+
+.hint_purple_may_win {
+    color: purple;
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0.3;
+  }
+}
 </style>
 <script src="js/jquery.min.js"></script>
 <script>
 
 let NUM_PLAYERS = 2,
     UNLIMITED_PIECES = false,
-    BAN_SUREWIN_CENTRE = false;
+    BAN_SUREWIN_CENTRE = false,
+    SHOW_OWN_WIN_HINTS = false,
+    SHOW_OTHERS_WIN_HINTS = false;
 let MAX_PCS = 18;
 const COLORS = ['', 'red', 'green', 'blue', 'purple'],
-    PCS = ['big', 'medium', 'small'];
+    PCS = ['big', 'medium', 'small'],
+    ROW = ['top', 'middle', 'bottom'],
+    COL = ['left', 'middle', 'right'];
 
 let who = 0,
     pcsPlayed = 0;
@@ -165,6 +200,11 @@ let who = 0,
 function hideChoices()
 {
     $('.choices').css('visibility', 'hidden');
+    $('div').removeClass('hint_other_may_win');
+    $('div').removeClass('hint_red_may_win');
+    $('div').removeClass('hint_green_may_win');
+    $('div').removeClass('hint_blue_may_win');
+    $('div').removeClass('hint_purple_may_win');
 }
 
 function showChoices()
@@ -173,7 +213,7 @@ function showChoices()
     c.css('visibility', '');
     c.css('color', COLORS[who + 1]);
 
-    $(`td`).removeClass('choice_unavailable');
+    $('td').removeClass('choice_unavailable');
 
     if (!UNLIMITED_PIECES)
     {
@@ -202,55 +242,71 @@ function showChoices()
 }
 
 //return who wins (as colour) or false
-function checkWins()
+function checkWins(curPlayerColor, applyWin)
 {
     let y, x, s;
+
+    function todoCheck(slotPlayerColor)
+    {
+        if (slotPlayerColor === '')
+            return false; //never check empty slot
+        return slotPlayerColor === curPlayerColor;
+    }
 
     //Check vertical lines (same colour & size, OR same colour of big to small)
     for (x = 0; x < 3; ++x)
     {
         for (s = 0; s < 3; ++s)
         {
-            const who = board[0][x][s];
-            if (who !== '')
+            const slotPlayerColor = board[0][x][s]; //colour of player whose piece (in current slot) that we are testing for a win
+            if (todoCheck(slotPlayerColor))
             {
-                if ((who === board[1][x][s]) && (who === board[2][x][s]))
+                if ((slotPlayerColor === board[1][x][s]) && (slotPlayerColor === board[2][x][s]))
                 {
-                    for (y = 0; y < 3; ++y)
+                    if (applyWin)
                     {
-                        $(`#cell${y}${x}_container`).css('background', 'yellow');
-                        $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                        for (y = 0; y < 3; ++y)
+                        {
+                            $(`#cell${y}${x}_container`).css('background', 'yellow');
+                            $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                        }
                     }
                     winBy = `line of ${PCS[s]} circles`;
-                    return who;
+                    return slotPlayerColor;
                 }
                 //check changing sizes
                 if (s === 0)
                 {
-                    if ((who === board[1][x][1]) && (who === board[2][x][2]))
+                    if ((slotPlayerColor === board[1][x][1]) && (slotPlayerColor === board[2][x][2]))
                     {
-                        let l = 50;
-                        for (y = 0, s = 0; y < 3; ++y, l -= 3, ++s)
+                        if (applyWin)
                         {
-                            $(`#cell${y}${x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
-                            $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                            let l = 50;
+                            for (y = 0, s = 0; y < 3; ++y, l -= 3, ++s)
+                            {
+                                $(`#cell${y}${x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
+                                $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                            }
                         }
                         winBy = `line of shrinking circles`;
-                        return who;
+                        return slotPlayerColor;
                     }
                 }
                 else if (s === 2)
                 {
-                    if ((who === board[1][x][1]) && (who === board[2][x][0]))
+                    if ((slotPlayerColor === board[1][x][1]) && (slotPlayerColor === board[2][x][0]))
                     {
-                        let l = 46;
-                        for (y = 0, s = 0; y < 3; ++y, l += 3, ++s)
+                        if (applyWin)
                         {
-                            $(`#cell${2-y}${x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
-                            $(`#cell${2-y}${x}_played${s}`).addClass('highlight');
+                            let l = 46;
+                            for (y = 0, s = 0; y < 3; ++y, l += 3, ++s)
+                            {
+                                $(`#cell${2-y}${x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
+                                $(`#cell${2-y}${x}_played${s}`).addClass('highlight');
+                            }
                         }
                         winBy = `line of enlarging circles`;
-                        return who;
+                        return slotPlayerColor;
                     }
                 }
             }
@@ -261,46 +317,55 @@ function checkWins()
     {
         for (s = 0; s < 3; ++s)
         {
-            const who = board[y][0][s];
-            if (who !== '')
+            const slotPlayerColor = board[y][0][s];
+            if (todoCheck(slotPlayerColor))
             {
-                if ((who === board[y][1][s]) && (who === board[y][2][s]))
+                if ((slotPlayerColor === board[y][1][s]) && (slotPlayerColor === board[y][2][s]))
                 {
-                    for (x = 0; x < 3; ++x)
+                    if (applyWin)
                     {
-                        $(`#cell${y}${x}_container`).css('background', 'yellow');
-                        $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                        for (x = 0; x < 3; ++x)
+                        {
+                            $(`#cell${y}${x}_container`).css('background', 'yellow');
+                            $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                        }
                     }
                     winBy = `line of ${PCS[s]} circles`;
-                    return who;
+                    return slotPlayerColor;
                 }
                 //check changing sizes
                 if (s === 0)
                 {
-                    if ((who === board[y][1][1]) && (who === board[y][2][2]))
+                    if ((slotPlayerColor === board[y][1][1]) && (slotPlayerColor === board[y][2][2]))
                     {
-                        let l = 50;
-                        for (x = 0, s = 0; x < 3; ++x, l -= 3, ++s)
+                        if (applyWin)
                         {
-                            $(`#cell${y}${x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
-                            $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                            let l = 50;
+                            for (x = 0, s = 0; x < 3; ++x, l -= 3, ++s)
+                            {
+                                $(`#cell${y}${x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
+                                $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                            }
                         }
                         winBy = `line of shrinking circles`;
-                        return who;
+                        return slotPlayerColor;
                     }
                 }
                 else if (s === 2)
                 {
-                    if ((who === board[y][1][1]) && (who === board[y][2][0]))
+                    if ((slotPlayerColor === board[y][1][1]) && (slotPlayerColor === board[y][2][0]))
                     {
-                        let l = 46;
-                        for (x = 0, s = 0; x < 3; ++x, l += 3, ++s)
+                        if (applyWin)
                         {
-                            $(`#cell${y}${2-x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
-                            $(`#cell${y}${2-x}_played${s}`).addClass('highlight');
+                            let l = 46;
+                            for (x = 0, s = 0; x < 3; ++x, l += 3, ++s)
+                            {
+                                $(`#cell${y}${2-x}_container`).css('background', `hsl(50.6,100%,${l}%)`);
+                                $(`#cell${y}${2-x}_played${s}`).addClass('highlight');
+                            }
                         }
                         winBy = `line of enlarging circles`;
-                        return who;
+                        return slotPlayerColor;
                     }
                 }
             }
@@ -309,91 +374,93 @@ function checkWins()
     //Check diagonals
     function shadeBackslash(s, inc)
     {
-		let incL = -inc * 3;
-			l = ((incL < 0)? 58: 25) + (incL * 3),
-			c = 'yellow';
+        if (!applyWin) return;
+        let incL = -inc * 3;
+            l = ((incL < 0)? 58: 25) + (incL * 3),
+            c = 'yellow';
         for (let x = 0; x < 3; ++x, s += inc, l += incL)
         {
-        	if (inc !== 0)
-        	{
-        		c = `hsl(50.6,100%,${l}%)`;
-			}
+            if (inc !== 0)
+            {
+                c = `hsl(50.6,100%,${l}%)`;
+            }
             $(`#cell${x}${x}_container`).css('background', c);
             $(`#cell${x}${x}_played${s}`).addClass('highlight');
         }
     }
     function shadeForwardSlash(s, inc)
     {
-		let incL = -inc * 3;
-			l = ((incL < 0)? 58: 25) + (incL * 3),
-			c = 'yellow';
+        if (!applyWin) return;
+        let incL = -inc * 3;
+            l = ((incL < 0)? 58: 25) + (incL * 3),
+            c = 'yellow';
         for (let x = 0; x < 3; ++x, s += inc, l += incL)
         {
-        	if (inc !== 0)
-        	{
-        		c = `hsl(50.6,100%,${l}%)`;
-			}
+            if (inc !== 0)
+            {
+                c = `hsl(50.6,100%,${l}%)`;
+            }
             $(`#cell${2-x}${x}_container`).css('background', c);
             $(`#cell${2-x}${x}_played${s}`).addClass('highlight');
         }
     }
     for (s = 0; s < 3; ++s)
     {
-        let who = board[0][0][s];
-        if (who !== '')
+        let slotPlayerColor = board[0][0][s];
+        if (todoCheck(slotPlayerColor))
         {
-            if ((who === board[1][1][s]) && (who === board[2][2][s]))
+            if ((slotPlayerColor === board[1][1][s]) && (slotPlayerColor === board[2][2][s]))
             {
                 shadeBackslash(s, 0);
                 winBy = `line of ${PCS[s]} circles`;
-                return who;
+                return slotPlayerColor;
             }
             //check changing sizes
             if (s === 0)
             {
-                if ((who === board[1][1][1]) && (who === board[2][2][2]))
+                if ((slotPlayerColor === board[1][1][1]) && (slotPlayerColor === board[2][2][2]))
                 {
                     shadeBackslash(0, 1);
                     winBy = `line of shrinking circles`;
-                    return who;
+                    return slotPlayerColor;
                 }
             }
             else if (s === 2)
             {
-                if ((who === board[1][1][1]) && (who === board[2][2][0]))
+                if ((slotPlayerColor === board[1][1][1]) && (slotPlayerColor === board[2][2][0]))
                 {
                     shadeBackslash(2, -1);
                     winBy = `line of enlarging circles`;
-                    return who;
+                    return slotPlayerColor;
                 }
             }
         }
-        who = board[2][0][s];
-        if (who !== '')
+        slotPlayerColor = board[2][0][s];
+        if (todoCheck(slotPlayerColor))
         {
-            if ((who === board[1][1][s]) && (who === board[0][2][s]))
+            if ((slotPlayerColor === board[1][1][s]) && (slotPlayerColor === board[0][2][s]))
             {
                 shadeForwardSlash(s, 0);
                 winBy = `line of ${PCS[s]} circles`;
-                return who;
+                return slotPlayerColor;
             }
             //check changing sizes
             if (s === 0)
             {
-                if ((who === board[1][1][1]) && (who === board[0][2][2]))
+                if ((slotPlayerColor === board[1][1][1]) && (slotPlayerColor === board[0][2][2]))
                 {
                     shadeForwardSlash(0, 1);
                     winBy = `line of shrinking circles`;
-                    return who;
+                    return slotPlayerColor;
                 }
             }
             else if (s === 2)
             {
-                if ((who === board[1][1][1]) && (who === board[0][2][0]))
+                if ((slotPlayerColor === board[1][1][1]) && (slotPlayerColor === board[0][2][0]))
                 {
                     shadeForwardSlash(2, -1);
                     winBy = `line of enlarging circles`;
-                    return who;
+                    return slotPlayerColor;
                 }
             }
         }
@@ -404,17 +471,20 @@ function checkWins()
         for (x = 0; x < 3; ++x)
         {
             const cell = board[y][x],
-                who = cell[0]; //actually is his colour
-            if ((who !== '')
-                && (who === cell[1]) && (who === cell[2]))
+                slotPlayerColor = cell[0];
+            if ((todoCheck(slotPlayerColor))
+                && (slotPlayerColor === cell[1]) && (slotPlayerColor === cell[2]))
             {
-                $(`#cell${y}${x}_container`).css('background', 'yellow');
-                for (let s = 0; s < 3; ++s)
+                if (applyWin)
                 {
-                    $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                    $(`#cell${y}${x}_container`).css('background', 'yellow');
+                    for (let s = 0; s < 3; ++s)
+                    {
+                        $(`#cell${y}${x}_played${s}`).addClass('highlight');
+                    }
                 }
                 winBy = 'concentric pieces';
-                return who;
+                return slotPlayerColor;
             }
         }
     }
@@ -447,9 +517,10 @@ function choiceClicked(row, col, size)
     const lastPlayer = who;
 
     $(`#cell${row}${col}${size}`).addClass('choice_gone');
-    const c = COLORS[who + 1];
-    board[row][col][size] = c;
-    $(`#cell${row}${col}_played${size}`).css('color', c);
+    const curPlayer = who,
+        curPlayerColor = COLORS[who + 1];
+    board[row][col][size] = curPlayerColor;
+    $(`#cell${row}${col}_played${size}`).css('color', curPlayerColor);
     ++who;
     if (who >= NUM_PLAYERS)
         who = 0;
@@ -463,7 +534,7 @@ function choiceClicked(row, col, size)
     }
 
     //check for wins
-    const won = checkWins();
+    const won = checkWins(curPlayerColor, true); //applyWin
     if (won)
     {
         disableAllChoices();
@@ -487,6 +558,70 @@ function choiceClicked(row, col, size)
     }
 
     showWhoseTurn();
+
+    //Show possible winning moves for self and others?
+    const upcomingPlayerColor = COLORS[who + 1]; //who == upcomingPlayer
+    if (SHOW_OTHERS_WIN_HINTS)
+    {
+        //console.log('Calculating possible winning moves for other players...');
+        for (let y = 0; y < 3; ++y)
+        {
+            for (let x = 0; x < 3; ++x)
+            {
+                for (let s = 0; s < 3; ++s)
+                {
+                    if (board[y][x][s] !== '')
+                        continue; //skip occupied slot
+                    if (BAN_SUREWIN_CENTRE && (y === 1) && (x === 1) && (s === 1))
+                        continue; //skip banned piece in killer slot
+
+                    for (let p = 0; p < NUM_PLAYERS; ++p)
+                    {
+                        if (p === who) continue; //skip self
+                        if (!UNLIMITED_PIECES && (gamePcs[p][s] <= 0))
+                            continue; //no more piece of this size to play, so skip
+                        const testPlayerColor = COLORS[p + 1];
+                        board[y][x][s] = testPlayerColor;
+                        const willWin = checkWins(testPlayerColor, false); //check this 'test' player, do not apply win
+                        board[y][x][s] = ''; //reset slot
+                        if (willWin)
+                        {
+                            //console.log(`Someone else (${willWin}) will be win by playing ${PCS[s]} piece at ${ROW[y]} row, ${COL[x]} column. Other winning options may exist.`);
+                            $(`#cell${y}${x}_played${s}`).addClass('hint_other_may_win');
+                        }
+                    }
+                }
+            }
+        }
+    } //end SHOW_OTHERS_WIN_HINTS
+    if (SHOW_OWN_WIN_HINTS)
+    {
+        //console.log(`Calculating your (${upcomingPlayerColor}) possible winning moves...`);
+        for (let y = 0; y < 3; ++y)
+        {
+            for (let x = 0; x < 3; ++x)
+            {
+                for (let s = 0; s < 3; ++s)
+                {
+                    if (board[y][x][s] !== '')
+                        continue; //skip occupied slot
+                    if (BAN_SUREWIN_CENTRE && (y === 1) && (x === 1) && (s === 1))
+                        continue; //skip banned piece in killer slot
+                    if (!UNLIMITED_PIECES && (gamePcs[who][s] <= 0))
+                        continue; //no more piece of this size to play, so skip
+
+                    board[y][x][s] = upcomingPlayerColor;
+                    const willWin = checkWins(upcomingPlayerColor, false); //check this (upcoming) player, do not apply win
+                    board[y][x][s] = ''; //reset slot
+                    if (willWin)
+                    {
+                        //console.log(`You (${upcomingPlayerColor}) will be win by playing ${PCS[s]} piece at ${ROW[y]} row, ${COL[x]} column. Other winning options may exist.`);
+                        $(`#cell${y}${x}_played${s}`).addClass(`hint_${upcomingPlayerColor}_may_win`);
+                    }
+                }
+            }
+        }
+    } //end SHOW_OWN_WIN_HINTS
 }
 
 function showStatus(s, colour)
@@ -524,6 +659,22 @@ function setBanSureWin(ban)
     }
 }
 
+function setHintOwn(show)
+{
+    if (SHOW_OWN_WIN_HINTS !== show)
+    {
+        SHOW_OWN_WIN_HINTS = show;
+    }
+}
+
+function setHintOthers(show)
+{
+    if (SHOW_OTHERS_WIN_HINTS !== show)
+    {
+        SHOW_OTHERS_WIN_HINTS = show;
+    }
+}
+
 function resetOptions()
 {
     NUM_PLAYERS = 2;
@@ -532,6 +683,10 @@ function resetOptions()
     $('#option_unlimited_pieces')[0].checked = false;
     BAN_SUREWIN_CENTRE = false;
     $('#option_ban_surewin')[0].checked = false;
+    SHOW_OWN_WIN_HINTS = false;
+    $('#option_hint_own')[0].checked = false;
+    SHOW_OTHERS_WIN_HINTS = false;
+    $('#option_hint_others')[0].checked = false;
     newGameBoard();
 }
 
@@ -550,6 +705,8 @@ function newGameBoard()
     $('div').removeClass('choice_unavailable');
     UNLIMITED_PIECES = $('#option_unlimited_pieces')[0].checked;
     BAN_SUREWIN_CENTRE = $('#option_ban_surewin')[0].checked;
+    SHOW_OWN_WIN_HINTS = $('#option_hint_own')[0].checked;
+    SHOW_OTHERS_WIN_HINTS = $('#option_hint_others')[0].checked;
 
     //1. draw game board
     const div = $('#divPlayingArea');
@@ -611,10 +768,10 @@ function newGameBoard()
         }
     }
 
-    //3. show player choices in current player's colour
+    //3. show player choices in colour of current player
     showChoices();
 
-    //update status
+    //4. update status
     showWhoseTurn();
 }
 
@@ -774,6 +931,13 @@ $(document).ready(() => {
 </table>
 <br>Refresh page to restart, or click: <button onclick="newGameBoard();">New Game</button>
 <div>
+<b>Help</b> (applies on next move made):<br>
+<input type="checkbox" id="option_hint_own" name="option_hint_own" value="option_hint_own"
+     onclick='setHintOwn(this.checked);'>
+<label for="option_hint_own"> Show hint of current player's winning moves</label><br>
+<input type="checkbox" id="option_hint_others" name="option_hint_others" value="option_hint_others"
+     onclick='setHintOthers(this.checked);'>
+<label for="option_hint_others"> Show hint of other players' winning moves</label><br>
 <b>Options</b> (changes will restart game):<br>
 Number of players:
   <input id='rad2' type="radio" class="chngRadio" name="radio" value="val1" onchange='setNumPlayers(2);' checked>
@@ -789,7 +953,7 @@ Number of players:
 <input type="checkbox" id="option_ban_surewin" name="option_ban_surewin" value="option_ban_surewin"
      onclick='setBanSureWin(this.checked);'>
 <label for="option_ban_surewin"> Ban centre</label><br>
-<button onclick="resetOptions();">Reset Options</button>
+<button onclick="resetOptions();">Reset Options</button><br>
 </div>
 <br><br><hr><div id='divRules'>
 <h2>Win by:</h2>
