@@ -1,10 +1,17 @@
 # Ferrules
 A web version of Ferrules board game - a layered tic-tac-toe like game for 2 to 4 players 😊
+![(game board)](https://raw.githubusercontent.com/sdneon/Ferrules/master/game_board.webp "Ferrule game board")![(game won)](https://raw.githubusercontent.com/sdneon/Ferrules/master/game_won.webp "game won")
 
 ## How to Play
-1. Choose a colour to play as.
-2. Take turns to place a piece. Try to win!
-    - Unlike tic-tac-toe, there are only 3 pieces of each size and colour.
+1. Decide on a colour to play as.
+    - `Red` goes 1st, followed by `green`, `blue` and lastly, `purple`. 
+    - Player pieces are in the `'decks'` on each of the four sides of the square playing area/`grid`.
+            - Player deck(s) will be hidden if there're less than 4 players.
+            - In normal mode, pieces are automatically removed from the deck when played.
+2. Take turns to place a piece, in the square playing area/`grid`. Try to win!
+    - Available moves are shown for the current player as the vertical columns of mini-icons in each grid square. Simply click the piece you want to play, in the grid to be played in.
+    - Unlike tic-tac-toe, there are only 3 pieces of each size and colour. Choose wisely.
+3. Game ends when a player wins, or all players run out of pieces.
 
 ### Winning Conditions
 There are **3** ways to win. See game page itself for diagrams.
