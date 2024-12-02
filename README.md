@@ -1,5 +1,6 @@
 # Ferrules
 A web version of Ferrules board game - a layered tic-tac-toe like game for 2 to 4 players 😊
+Try it [here](http://yunharla.altervista.org/maths/ferrules.html).
 ![(game board)](https://raw.githubusercontent.com/sdneon/Ferrules/master/game_board.webp "Ferrule game board")![(game won)](https://raw.githubusercontent.com/sdneon/Ferrules/master/game_won.webp "game won")
 
 ## How to Play
